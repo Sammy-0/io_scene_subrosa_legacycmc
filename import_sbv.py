@@ -4,9 +4,9 @@ from . import shared
 
 
 def load(context, filepath):
-    with open(filepath, 'rb') as f:
-        (version,) = unpack('<i', f.read(4))
-        assert version <= 5, 'Unknown file version.'
+    with open(filepath, "rb") as f:
+        (version,) = unpack("<i", f.read(4))
+        assert version <= 5, "Unknown file version."
 
         collision_vertices = []
         collision_faces = []
@@ -14,21 +14,21 @@ def load(context, filepath):
         if version >= 5:
             f.read(4 * 3)
 
-        (collision_vertex_count,) = unpack('<i', f.read(4))
+        (collision_vertex_count,) = unpack("<i", f.read(4))
         for _ in range(collision_vertex_count):
-            collision_vertices.append(unpack('<fff', f.read(4 * 3)))
+            collision_vertices.append(unpack("<fff", f.read(4 * 3)))
             f.read(4)
 
-        (unused_struct_count,) = unpack('<i', f.read(4))
+        (unused_struct_count,) = unpack("<i", f.read(4))
         f.read(4 * 3 * unused_struct_count)
 
-        (collision_face_count,) = unpack('<i', f.read(4))
+        (collision_face_count,) = unpack("<i", f.read(4))
         for _ in range(collision_face_count):
-            (num_vertices,) = unpack('<i', f.read(4))
+            (num_vertices,) = unpack("<i", f.read(4))
             vertex_indices = []
 
             for _ in range(num_vertices):
-                (vertex_id,) = unpack('<i', f.read(4))
+                (vertex_id,) = unpack("<i", f.read(4))
                 vertex_indices.append(vertex_id)
 
             vertex_indices.reverse()
@@ -37,18 +37,18 @@ def load(context, filepath):
         vertices = []
         faces = []
 
-        (vertex_count,) = unpack('<i', f.read(4))
+        (vertex_count,) = unpack("<i", f.read(4))
         for _ in range(vertex_count):
-            vertices.append(unpack('<fff', f.read(4 * 3)))
+            vertices.append(unpack("<fff", f.read(4 * 3)))
 
-        (face_count,) = unpack('<i', f.read(4))
+        (face_count,) = unpack("<i", f.read(4))
         for _ in range(face_count):
             f.read(4)
-            (num_vertices,) = unpack('<i', f.read(4))
+            (num_vertices,) = unpack("<i", f.read(4))
             vertex_indices = []
 
             for _ in range(num_vertices):
-                (vertex_id,) = unpack('<i', f.read(4))
+                (vertex_id,) = unpack("<i", f.read(4))
                 vertex_indices.append(vertex_id)
                 f.read(4 * 4)
 
@@ -60,21 +60,31 @@ def load(context, filepath):
         window_vertices = []
         window_faces = []
 
-        (window_count,) = unpack('<i', f.read(4))
+        (window_count,) = unpack("<i", f.read(4))
         for _ in range(window_count):
-            (num_vertices,) = unpack('<i', f.read(4))
+            (num_vertices,) = unpack("<i", f.read(4))
             vertex_indices = []
 
             for _ in range(num_vertices):
                 vertex_indices.append(len(window_vertices))
-                window_vertices.append(unpack('<fff', f.read(4 * 3)))
+                window_vertices.append(unpack("<fff", f.read(4 * 3)))
 
             vertex_indices.reverse()
             window_faces.append(tuple(vertex_indices))
 
         name = bpy.path.display_name_from_filepath(filepath)
-        shared.load_mesh(context, name, vertices, faces, None)
-        shared.load_mesh(context, name + '.collision', collision_vertices, collision_faces, None)
-        shared.load_mesh(context, name + '.windows', window_vertices, window_faces, None)
+        shared.load_mesh(context, name, vertices, faces, None, None, None)
+        shared.load_mesh(
+            context,
+            name + ".collision",
+            collision_vertices,
+            collision_faces,
+            None,
+            None,
+            None,
+        )
+        shared.load_mesh(
+            context, name + ".windows", window_vertices, window_faces, None, None, None
+        )
 
-    return {'FINISHED'}
+    return {"FINISHED"}

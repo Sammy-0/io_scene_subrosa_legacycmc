@@ -3,20 +3,19 @@ import bmesh
 from struct import pack
 
 
-def save(context, filepath):
-    with open(filepath, 'wb') as f:
+def save(context: bpy.types.Context, filepath: str):
+    with open(filepath, "wb") as f:
         # Magic number
-        f.write(b'CMod')
+        f.write(b"CMod")
         # Version
-        f.write(pack('<i', 3))
+        f.write(pack("<i", 3))
 
         depsgraph = context.evaluated_depsgraph_get()
         scene = context.scene
 
         # Exit edit mode before exporting,
         # so current object states are exported properly.
-        if bpy.ops.object.mode_set.poll():
-            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.mode_set(mode="OBJECT")
 
         cmo_verts = []
         cmo_uvs = []
@@ -51,27 +50,29 @@ def save(context, filepath):
                     cmo_uvs.append((0.0, 0.0))
 
             for face in bm.faces:
-                cmo_faces.append((
-                    face.verts[2].index + vertex_index_offset,
-                    face.verts[1].index + vertex_index_offset,
-                    face.verts[0].index + vertex_index_offset
-                ))
+                cmo_faces.append(
+                    (
+                        face.verts[2].index + vertex_index_offset,
+                        face.verts[1].index + vertex_index_offset,
+                        face.verts[0].index + vertex_index_offset,
+                    )
+                )
 
             bm.free()
 
-        f.write(pack('<i', len(cmo_verts)))
+        f.write(pack("<i", len(cmo_verts)))
 
         for i in range(len(cmo_verts)):
-            x, y, z = cmo_verts[i]
-            f.write(pack('<fff', x, y, z))
+            x, z, y = cmo_verts[i]
+            f.write(pack("<fff", x, y, z))
             u, v = cmo_uvs[i]
-            f.write(pack('<fff', u, v, 0.0))
+            f.write(pack("<fff", u, v, 0.0))
 
-        f.write(pack('<i', len(cmo_faces)))
+        f.write(pack("<i", len(cmo_faces)))
 
         for face in cmo_faces:
-            f.write(pack('<i', 3))
-            f.write(pack('<iii', *face))
-            f.write(pack('<ii', 0, 0))
+            f.write(pack("<i", 3))
+            f.write(pack("<iii", *face))
+            f.write(pack("<ii", 0, 0))
 
-    return {'FINISHED'}
+    return {"FINISHED"}

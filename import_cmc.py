@@ -4,32 +4,41 @@ from . import shared
 
 
 def load(context, filepath):
-    with open(filepath, 'rb') as f:
+    with open(filepath, "rb") as f:
         f.read(4)  # Magic number
 
-        (version,) = unpack('<i', f.read(4))
-        assert version == 2, 'Unknown file version.'
-
-        (bone_count,) = unpack('<i', f.read(4))
-        f.read(4 * 3 * bone_count)
+        (version,) = unpack("<i", f.read(4))
+        assert version == 2, "Unknown file version."
 
         vertices = []
         faces = []
         vertex_uvs = []
+        vertex_weights = []
+        bones = []
 
-        (vertex_count,) = unpack('<i', f.read(4))
+        (bone_count,) = unpack("<i", f.read(4))
+        for _ in range(bone_count):
+            bones.append(unpack("<fff", f.read(4 * 3)))
+
+        (vertex_count,) = unpack("<i", f.read(4))
         for _ in range(vertex_count):
-            vertices.append(unpack('<fff', f.read(4 * 3)))
-            f.read(4 * 4 * bone_count)
-            vertex_uvs.append(unpack('<ff', f.read(4 * 2)))
+            weights = []
+            vertices.append(unpack("<fff", f.read(4 * 3)))
+            for _ in range(bone_count):
+                weights.append(unpack("<ffff", f.read(4 * 4)))
 
-        (face_count,) = unpack('<i', f.read(4))
+            vertex_uvs.append(unpack("<ff", f.read(4 * 2)))
+            vertex_weights.append(weights)
+
+        (face_count,) = unpack("<i", f.read(4))
         for _ in range(face_count):
-            vertex_indices = unpack('<iii', f.read(4 * 3))
+            vertex_indices = unpack("<iii", f.read(4 * 3))
             # Indices are reversed for correct normals
             faces.append(vertex_indices[::-1])
 
         name = bpy.path.display_name_from_filepath(filepath)
-        shared.load_mesh(context, name, vertices, faces, vertex_uvs)
+        shared.load_mesh(
+            context, name, vertices, faces, vertex_uvs, vertex_weights, bones
+        )
 
-    return {'FINISHED'}
+    return {"FINISHED"}

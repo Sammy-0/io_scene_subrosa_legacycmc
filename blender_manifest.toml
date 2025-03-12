@@ -1,0 +1,25 @@
+schema_version = "1.0.0"
+
+id = "io_scene_subrosa"
+version = "1.0.0"
+blender_version_min = "4.2.0"
+type = "add-on"
+
+name = "Sub Rosa Tools"
+tagline = "An extension for save/load of Sub Rosa's model formats"
+maintainer = "checkraisefold <checkraisefold@crf.gay>"
+website = "https://github.com/checkraisefold/io_scene_subrosa"
+license = ["SPDX:GPL-3.0-or-later", "SPDX:MIT"]
+copyright = ["2024-2025 checkraisefold", "2020-2025 Mike/jdbool"]
+
+[permissions]
+files = "Import/export models from/to disk"
+
+[build]
+paths_exclude_pattern = [
+    "__pycache__/",
+    "/.git/",
+    "/*.zip",
+    ".venv/",
+    "requirements.txt",
+]
