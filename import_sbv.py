@@ -54,7 +54,6 @@ def load(context, filepath):
 
             f.read(4 * 4)
 
-            vertex_indices.reverse()
             faces.append(tuple(vertex_indices))
 
         window_vertices = []

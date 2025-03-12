@@ -22,7 +22,7 @@ def load(context, filepath):
 
         (face_count,) = unpack("<i", f.read(4))
         for _ in range(face_count):
-            vertex_indices = unpack("<iii", f.read(4 * 3))[::-1]
+            vertex_indices = unpack("<iii", f.read(4 * 3))
             faces.append(vertex_indices)
 
         name = bpy.path.display_name_from_filepath(filepath)

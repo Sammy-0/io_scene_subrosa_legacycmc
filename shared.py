@@ -107,12 +107,14 @@ def load_mesh(
 
                     weightIndices[weightCount] = boneIndex
                     weightValues[weightCount] = innerWeights[3]
-                    weightOffsets.append(
+                    weightOffset = (
                         mathutils.Vector(
                             (innerWeights[0], innerWeights[2], innerWeights[1])
                         )
                         * 1.125
                     )
+                    weightOffsets.append(weightOffset)
+
                     weightCount += 1
 
                 newVertPosition = mathutils.Vector((0, 0, 0))
@@ -134,7 +136,8 @@ def load_mesh(
         )
         armature_modifier.object = armature_object
 
-    bpy.ops.object.mode_set(mode="OBJECT")
+    if bpy.context.active_object is not None:
+        bpy.ops.object.mode_set(mode="OBJECT")
 
     view_layer = context.view_layer
     collection = view_layer.active_layer_collection.collection

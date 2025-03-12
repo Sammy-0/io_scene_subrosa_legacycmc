@@ -33,8 +33,7 @@ def load(context, filepath):
         (face_count,) = unpack("<i", f.read(4))
         for _ in range(face_count):
             vertex_indices = unpack("<iii", f.read(4 * 3))
-            # Indices are reversed for correct normals
-            faces.append(vertex_indices[::-1])
+            faces.append(tuple(vertex_indices[:]))
 
         name = bpy.path.display_name_from_filepath(filepath)
         shared.load_mesh(

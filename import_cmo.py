@@ -32,7 +32,6 @@ def load(context, filepath):
                 (vertex_id,) = unpack("<i", f.read(4))
                 vertex_indices.append(vertex_id)
 
-            vertex_indices.reverse()
             faces.append(tuple(vertex_indices))
             f.read(8 if version > 1 else 4)
 

@@ -25,18 +25,67 @@ bone_linkages = (0, 0, 1, 2, 2, 4, 5, 2, 7, 8, 0, 10, 11, 0, 13, 14)
 bone_dict = {key: idx for idx, key in enumerate(bone_names)}
 
 
+# Taken from https://github.com/OpenSAGE/OpenSAGE.BlenderPlugin
+def split_multi_uv_vertices(
+    context: bpy.types.Context, mesh: bpy.types.Mesh, b_mesh: bmesh.types.BMesh
+):
+    b_mesh.verts.ensure_lookup_table()
+
+    for ver in b_mesh.verts:
+        ver.select_set(False)
+
+    for i, uv_layer in enumerate(mesh.uv_layers):
+        tx_coords = [None] * len(uv_layer.data)
+        for j, face in enumerate(b_mesh.faces):
+            for loop in face.loops:
+                vert_index = mesh.polygons[j].vertices[loop.index % 3]
+                if tx_coords[vert_index] is None:
+                    tx_coords[vert_index] = uv_layer.data[loop.index].uv
+                elif tx_coords[vert_index] != uv_layer.data[loop.index].uv:
+                    b_mesh.verts[vert_index].select_set(True)
+                    vert_index2 = mesh.polygons[j].vertices[(loop.index + 1) % 3]
+                    b_mesh.verts[vert_index2].select_set(True)
+                    vert_index3 = mesh.polygons[j].vertices[(loop.index - 1) % 3]
+                    b_mesh.verts[vert_index3].select_set(True)
+
+    split_edges = [e for e in b_mesh.edges if e.verts[0].select and e.verts[1].select]
+
+    if len(split_edges) > 0:
+        bmesh.ops.split_edges(b_mesh, edges=split_edges)
+
+    return b_mesh
+
+
 def save(context: bpy.types.Context, filepath: str):
+    # Exit edit mode before exporting,
+    # so current object states are exported properly.
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    depsgraph = context.evaluated_depsgraph_get()
+    ob: bpy.types.Object = bpy.context.active_object
+    if ob is None or ob.type != "MESH":
+        return [True, "Select a mesh with an armature as its parent"]
+
+    ob_for_convert: bpy.types.Object = ob.evaluated_get(depsgraph)
+    if ob_for_convert is None:
+        return [True, "Select a mesh with an armature as its parent"]
+
+    parent_armature: bpy.types.Object = ob.parent
+    if parent_armature is None or parent_armature.type != "ARMATURE":
+        return [True, "Select a mesh with an armature as its parent"]
+    if parent_armature.type != "ARMATURE":
+        return [True, "Select a mesh with an armature as its parent"]
+    parent_armature_data: bpy.types.Armature = parent_armature.data
+
+    me: bpy.types.Mesh = ob_for_convert.data
+    if me.id_type != "MESH":
+        return [True, "Select a mesh with an armature as its parent"]
+
     with open(filepath, "wb") as f:
         # Magic number
         f.write(b"CMod")
         # Version
         f.write(pack("<i", 2))
-
-        depsgraph = context.evaluated_depsgraph_get()
-
-        # Exit edit mode before exporting,
-        # so current object states are exported properly.
-        bpy.ops.object.mode_set(mode="OBJECT")
 
         cmc_verts = []
         cmc_uvs = []
@@ -44,29 +93,17 @@ def save(context: bpy.types.Context, filepath: str):
         cmc_weights = []
         cmc_bones = []
 
-        ob: bpy.types.Object = bpy.context.active_object
-        if ob is None:
-            return [True, "Select a mesh with an armature as its parent"]
-
-        ob_for_convert: bpy.types.Object = ob.evaluated_get(depsgraph)
-        parent_armature: bpy.types.Object = ob.parent
-
-        if parent_armature is None:
-            return [True, "Select a mesh with an armature as its parent"]
-        if parent_armature.type != "ARMATURE":
-            return [True, "Select a mesh with an armature as its parent"]
-        parent_armature_data: bpy.types.Armature = parent_armature.data
-
-        try:
-            me: bpy.types.Mesh = ob_for_convert.to_mesh()
-        except RuntimeError:
-            me = None
-        if me is None:
-            return [True, "Select a mesh with an armature as its parent"]
-
         bm = bmesh.new()
         bm.from_mesh(me)
         bmesh.ops.triangulate(bm, faces=bm.faces)
+        bm.to_mesh(me)
+        me.update()
+
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bm = split_multi_uv_vertices(context, me, bm)
+        bm.to_mesh(me)
+        me.update()
 
         uv_layer = bm.loops.layers.uv.verify()
 
@@ -82,9 +119,9 @@ def save(context: bpy.types.Context, filepath: str):
         for face in bm.faces:
             cmc_faces.append(
                 (
-                    face.verts[2].index,
-                    face.verts[1].index,
                     face.verts[0].index,
+                    face.verts[1].index,
+                    face.verts[2].index,
                 )
             )
 
@@ -162,6 +199,11 @@ def save(context: bpy.types.Context, filepath: str):
                         boneObject.matrix_local.to_translation()
                     )
                     boneOffset: mathutils.Vector = (vert.co - boneTransform) / 1.125
+
+                    # If there is no loaded weights, offset will be 0
+                    if groupCount <= 0:
+                        boneOffset = mathutils.Vector()
+
                     finalWeightData.append(
                         [boneOffset.x, boneOffset.y, boneOffset.z, usingWeight]
                     )

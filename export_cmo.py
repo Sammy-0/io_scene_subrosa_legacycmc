@@ -22,8 +22,6 @@ def save(context: bpy.types.Context, filepath: str):
         cmo_faces = []
 
         for ob in scene.objects:
-            vertex_index_offset = len(cmo_verts)
-
             ob_for_convert = ob.evaluated_get(depsgraph)
 
             try:
@@ -52,9 +50,9 @@ def save(context: bpy.types.Context, filepath: str):
             for face in bm.faces:
                 cmo_faces.append(
                     (
-                        face.verts[2].index + vertex_index_offset,
-                        face.verts[1].index + vertex_index_offset,
-                        face.verts[0].index + vertex_index_offset,
+                        face.verts[0].index,
+                        face.verts[1].index,
+                        face.verts[2].index,
                     )
                 )
 
