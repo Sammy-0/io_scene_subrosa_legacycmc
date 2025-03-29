@@ -27,7 +27,7 @@ class ImportCMC(bpy.types.Operator, ImportHelper):
     bl_label = "Import CMC"
     bl_options = {"UNDO"}
 
-    filename_ext = ".cmo"
+    filename_ext = ".cmc"
     filter_glob = StringProperty(default="*.cmc", options={"HIDDEN"})
 
     def execute(self, context):
@@ -35,6 +35,22 @@ class ImportCMC(bpy.types.Operator, ImportHelper):
 
         keywords = self.as_keywords(ignore=("filter_glob",))
         return import_cmc.load(context, **keywords)
+
+class ImportLegacyCMC(bpy.types.Operator, ImportHelper):
+    """Load a Sub Rosa Character File"""
+
+    bl_idname = "import_scene.legacycmc"
+    bl_label = "Import Legacy CMC"
+    bl_options = {"UNDO"}
+
+    filename_ext = ".cmc"
+    filter_glob = StringProperty(default="*.cmc", options={"HIDDEN"})
+
+    def execute(self, context):
+        from . import import_legacycmc
+
+        keywords = self.as_keywords(ignore=("filter_glob",))
+        return import_legacycmc.load(context, **keywords)
 
 
 class ImportITM(bpy.types.Operator, ImportHelper):
@@ -91,6 +107,7 @@ class ImportSBV(bpy.types.Operator, ImportHelper):
 def menu_func_import(self, context):
     self.layout.operator(ImportCMO.bl_idname, text="Sub Rosa Object (.cmo)")
     self.layout.operator(ImportCMC.bl_idname, text="Sub Rosa Character (.cmc)")
+    self.layout.operator(ImportLegacyCMC.bl_idname, text="Legacy Sub Rosa Character (.cmc)")
     self.layout.operator(ImportITM.bl_idname, text="Sub Rosa Item (.itm)")
     self.layout.operator(ImportSIT.bl_idname, text="Sub Rosa Legacy Item (.sit)")
     self.layout.operator(ImportSBV.bl_idname, text="Sub Rosa Vehicle (.sbv)")
@@ -131,14 +148,34 @@ class ExportCMC(bpy.types.Operator, ExportHelper):
             return {"CANCELLED"}
 
         return {"FINISHED"}
+class ExportLegacyCMC(bpy.types.Operator, ExportHelper):
+    """Export a Legacy Sub Rosa Character File"""
+
+    bl_idname = "export_scene.legacycmc"
+    bl_label = "Export Legacy CMC"
+
+    filename_ext = ".cmc"
+    filter_glob = StringProperty(default="*.cmc", options={"HIDDEN"})
+
+    def execute(self, context):
+        from . import export_legacycmc
+
+        keywords = self.as_keywords(ignore=("filter_glob", "check_existing"))
+        didError, message = export_legacycmc.save(context, **keywords)
+        if didError:
+            self.report({"INFO"}, message)
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
 
 
 def menu_func_export(self, context):
     self.layout.operator(ExportCMO.bl_idname, text="Sub Rosa Object (.cmo)")
     self.layout.operator(ExportCMC.bl_idname, text="Sub Rosa Character (.cmc)")
+    self.layout.operator(ExportLegacyCMC.bl_idname, text="Legacy Sub Rosa Character (.cmc)")
 
 
-classes = (ImportCMO, ImportCMC, ImportITM, ImportSIT, ImportSBV, ExportCMO, ExportCMC)
+classes = (ImportCMO, ImportCMC, ImportLegacyCMC, ImportITM, ImportSIT, ImportSBV, ExportCMO, ExportCMC, ExportLegacyCMC)
 
 
 def register():
